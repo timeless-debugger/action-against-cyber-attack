@@ -211,4 +211,4 @@ This tool is intended for **educational and authorized security research purpose
 
 ## 👤 Author
 
-**Soumyadip** — [GitHub](https://github.com/Soumyadip-UEM)
+**Soumyadip** — [GitHub](https://github.com/timeless-debugger)
