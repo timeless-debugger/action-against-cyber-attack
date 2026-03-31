@@ -1,0 +1,35 @@
+================================================================================
+                    SECURITY MONITORING SUMMARY
+================================================================================
+
+
+NETWORK MONITORING SUMMARY
+--------------------------------------------------------------------------------
+  Total Packets: 5497
+  Total Data (MB): 0.36
+  TCP Packets: 4795
+  UDP Packets: 397
+  Unique IPs Tracked: 23
+
+SYSTEM MONITORING SUMMARY
+--------------------------------------------------------------------------------
+  Resource Snapshots: 94
+  Process Records: 240
+  File Changes Detected: 1
+  Session Events: 1
+
+TOP 5 IPS BY BANDWIDTH
+--------------------------------------------------------------------------------
+  - 192.168.56.1: 0.27 MB
+  - 192.168.56.103: 0.26 MB
+  - 192.168.31.226: 0.08 MB
+  - 192.168.31.1: 0.03 MB
+  - 54.82.204.217: 0.02 MB
+
+TOP 5 PORTS
+--------------------------------------------------------------------------------
+  - Port 80: 262 connections
+  - Port 135: 125 connections
+  - Port 53: 107 connections
+  - Port 443: 96 connections
+  - Port 445: 88 connections

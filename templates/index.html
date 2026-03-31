@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Integrated Security Monitoring System — SecureWatch</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app-root">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+            <div class="nav-left">
+                <div class="shield-icon">
+                    <span class="shield-top"></span>
+                    <span class="shield-bottom"></span>
+                </div>
+                <div>
+                    <div class="product-name">SecureWatch</div>
+                    <div class="product-subtitle">Integrated Security Monitoring System</div>
+                </div>
+            </div>
+            <div class="nav-center">
+                <div id="status-pill" class="status-pill demo">
+                    <span class="status-dot"></span>
+                    <span id="status-text">DEMO MODE</span>
+                </div>
+            </div>
+            <div class="nav-right">
+                <div class="controls-row">
+                    <button id="start-btn" class="btn btn-start">Start Monitor</button>
+                    <button id="stop-btn" class="btn btn-stop">Stop Monitor</button>
+                    <button id="clear-btn" class="btn btn-clear">Clear History</button>
+                </div>
+                <div id="clock" class="clock"></div>
+            </div>
+        </header>
+
+        <!-- Demo banner -->
+        <div id="demo-banner" class="demo-banner">
+            <span class="banner-icon">⚠</span>
+            <span class="banner-text">
+                DEMO MODE — Showing simulated data. Click <strong>Start Monitor</strong> for live data.
+            </span>
+        </div>
+
+        {% if not scapy_available and import_error %}
+        <div class="warning-banner">
+            <strong>Notice:</strong> Live packet capture modules are unavailable ({{ import_error }}). The dashboard will remain in demo mode on this system.
+        </div>
+        {% endif %}
+
+        <!-- Stats row -->
+        <main class="page-main">
+            <section class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-label">Total Packets Captured</div>
+                    <div class="stat-main">
+                        <div class="stat-icon arrow-up"></div>
+                        <div id="packet-count" class="stat-value">0</div>
+                    </div>
+                    <div class="stat-footer">Real‑time packet inspection</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Data Transferred (MB)</div>
+                    <div class="stat-main">
+                        <div class="stat-icon bytes-icon"></div>
+                        <div id="total-bytes" class="stat-value">0.00</div>
+                    </div>
+                    <div class="stat-footer">Aggregated network throughput</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Threats</div>
+                    <div class="stat-main">
+                        <div class="stat-icon threat-icon"></div>
+                        <div id="active-threats" class="stat-value">0</div>
+                    </div>
+                    <div class="stat-footer">Alerts in last 60 seconds</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">CPU Usage</div>
+                    <div class="stat-main">
+                        <div class="stat-icon cpu-icon"></div>
+                        <div id="cpu-usage" class="stat-value">0%</div>
+                    </div>
+                    <div class="stat-footer">Host resource utilization</div>
+                </div>
+            </section>
+
+            <!-- Main content columns -->
+            <section class="main-columns">
+                <div class="column-left">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2>Live Threat Alerts</h2>
+                        </div>
+                        <div id="alerts-feed" class="alerts-feed">
+                            <div class="empty-state">
+                                <span class="empty-main">No threats detected — System is secure ✓</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="column-right">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2>Network Protocol Distribution</h2>
+                        </div>
+                        <div class="protocol-bars">
+                            <div class="protocol-row">
+                                <span>TCP</span>
+                                <div class="bar-wrapper">
+                                    <div id="tcp-bar" class="bar tcp"></div>
+                                </div>
+                                <span id="tcp-label" class="bar-label">0%</span>
+                            </div>
+                            <div class="protocol-row">
+                                <span>UDP</span>
+                                <div class="bar-wrapper">
+                                    <div id="udp-bar" class="bar udp"></div>
+                                </div>
+                                <span id="udp-label" class="bar-label">0%</span>
+                            </div>
+                            <div class="protocol-row">
+                                <span>OTHER</span>
+                                <div class="bar-wrapper">
+                                    <div id="other-bar" class="bar other"></div>
+                                </div>
+                                <span id="other-label" class="bar-label">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2>Top IPs by Bandwidth</h2>
+                        </div>
+                        <ol id="top-ips" class="top-ips-list"></ol>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2>Recent Connections</h2>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Dir</th>
+                                        <th>Src IP</th>
+                                        <th>Dst IP</th>
+                                        <th>Port</th>
+                                        <th>Proto</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-connections"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- System stats -->
+            <section class="system-stats">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Host Resource Utilization</h2>
+                    </div>
+                    <div class="resource-rings">
+                        <div class="ring-block">
+                            <svg viewBox="0 0 120 120" class="ring-svg">
+                                <circle class="ring-bg" cx="60" cy="60" r="50" />
+                                <circle id="ring-cpu" class="ring-fg" cx="60" cy="60" r="50" />
+                            </svg>
+                            <div class="ring-label">
+                                <span>CPU</span>
+                                <span id="ring-cpu-value" class="ring-value">0%</span>
+                            </div>
+                        </div>
+                        <div class="ring-block">
+                            <svg viewBox="0 0 120 120" class="ring-svg">
+                                <circle class="ring-bg" cx="60" cy="60" r="50" />
+                                <circle id="ring-mem" class="ring-fg" cx="60" cy="60" r="50" />
+                            </svg>
+                            <div class="ring-label">
+                                <span>Memory</span>
+                                <span id="ring-mem-value" class="ring-value">0%</span>
+                            </div>
+                        </div>
+                        <div class="ring-block">
+                            <svg viewBox="0 0 120 120" class="ring-svg">
+                                <circle class="ring-bg" cx="60" cy="60" r="50" />
+                                <circle id="ring-disk" class="ring-fg" cx="60" cy="60" r="50" />
+                            </svg>
+                            <div class="ring-label">
+                                <span>Disk</span>
+                                <span id="ring-disk-value" class="ring-value">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Top Processes</h2>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Process</th>
+                                    <th>CPU%</th>
+                                    <th>Mem%</th>
+                                </tr>
+                            </thead>
+                            <tbody id="top-processes"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Recent File Changes</h2>
+                    </div>
+                    <ul id="file-changes" class="file-changes-list"></ul>
+                </div>
+            </section>
+
+            <!-- Defense / blocked IPs -->
+            <section class="defense-row">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>Active Defense — Blocked IPs</h2>
+                    </div>
+                    <ul id="blocked-ips" class="blocked-ips-list"></ul>
+                </div>
+            </section>
+
+            <!-- Threat detection matrix -->
+            <section class="threat-matrix panel">
+                <div class="panel-header">
+                    <h2>Threat Detection Coverage</h2>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table threat-table">
+                        <thead>
+                            <tr>
+                                <th>Threat</th>
+                                <th>Severity</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="threat-table-body">
+                            <tr data-threat="PORT_SCAN">
+                                <td class="mono">Port Scan</td>
+                                <td><span class="badge severity-high">HIGH</span></td>
+                                <td>Multiple ports probed across host</td>
+                                <td><span class="status-pill neutral">Watching</span></td>
+                            </tr>
+                            <tr data-threat="BRUTE_FORCE">
+                                <td class="mono">Brute Force</td>
+                                <td><span class="badge severity-high">HIGH</span></td>
+                                <td>Repeated authentication attempts</td>
+                                <td><span class="status-pill neutral">Watching</span></td>
+                            </tr>
+                            <tr data-threat="DDOS">
+                                <td class="mono">DDoS</td>
+                                <td><span class="badge severity-critical">CRITICAL</span></td>
+                                <td>Abnormally high packet rate</td>
+                                <td><span class="status-pill neutral">Watching</span></td>
+                            </tr>
+                            <tr data-threat="SENSITIVE_ACCESS">
+                                <td class="mono">Sensitive Access</td>
+                                <td><span class="badge severity-high">HIGH</span></td>
+                                <td>Connections to privileged services</td>
+                                <td><span class="status-pill neutral">Watching</span></td>
+                            </tr>
+                            <tr data-threat="SUSPICIOUS_PROCESS">
+                                <td class="mono">Suspicious Process</td>
+                                <td><span class="badge severity-high">HIGH</span></td>
+                                <td>Abnormal process behavior</td>
+                                <td><span class="status-pill neutral">Watching</span></td>
+                            </tr>
+                            <tr data-threat="DATA_EXFILTRATION">
+                                <td class="mono">Data Exfiltration</td>
+                                <td><span class="badge severity-critical">CRITICAL</span></td>
+                                <td>Large outbound data transfer</td>
+                                <td><span class="status-pill neutral">Watching</span></td>
+                            </tr>
+                            <tr data-threat="ARP_SPOOFING">
+                                <td class="mono">ARP Spoofing</td>
+                                <td><span class="badge severity-critical">CRITICAL</span></td>
+                                <td>Suspicious ARP‑related traffic</td>
+                                <td><span class="status-pill neutral">Watching</span></td>
+                            </tr>
+                            <tr data-threat="DNS_TUNNELING">
+                                <td class="mono">DNS Tunneling</td>
+                                <td><span class="badge severity-high">HIGH</span></td>
+                                <td>Covert channels via DNS traffic</td>
+                                <td><span class="status-pill neutral">Watching</span></td>
+                            </tr>
+                            <tr data-threat="C2_BEACONING">
+                                <td class="mono">C2 Beaconing</td>
+                                <td><span class="badge severity-critical">CRITICAL</span></td>
+                                <td>Regular callbacks to command‑and‑control</td>
+                                <td><span class="status-pill neutral">Watching</span></td>
+                            </tr>
+                            <tr data-threat="LATERAL_MOVEMENT">
+                                <td class="mono">Lateral Movement</td>
+                                <td><span class="badge severity-high">HIGH</span></td>
+                                <td>Traversal between internal hosts</td>
+                                <td><span class="status-pill neutral">Watching</span></td>
+                            </tr>
+                            <tr data-threat="RANSOMWARE">
+                                <td class="mono">Ransomware</td>
+                                <td><span class="badge severity-critical">CRITICAL</span></td>
+                                <td>Rapid file modification pattern</td>
+                                <td><span class="status-pill neutral">Watching</span></td>
+                            </tr>
+                            <tr data-threat="REVERSE_SHELL">
+                                <td class="mono">Reverse Shell</td>
+                                <td><span class="badge severity-critical">CRITICAL</span></td>
+                                <td>Interactive shell over network</td>
+                                <td><span class="status-pill neutral">Watching</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Terminal log -->
+            <section class="terminal-section">
+                <div class="terminal-window">
+                    <div class="terminal-header">
+                        <div class="window-dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <div class="terminal-title">● SecureWatch Terminal</div>
+                    </div>
+                    <div id="terminal-body" class="terminal-body">
+                        <div class="terminal-line info">[--:--:--] INFO: SecureWatch initialized - waiting for telemetry...</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script>
+        window.__SECUREWATCH_INITIAL__ = {
+            isLive: false
+        };
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
+
